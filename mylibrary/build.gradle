@@ -1,0 +1,67 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 28
+
+
+
+    defaultConfig {
+        minSdkVersion 15
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['src/main/jniLibs']
+        }
+    }
+
+}
+
+dependencies {
+    api fileTree(dir: 'libs', include: ['*.jar'])
+
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+}
+
+def SDK_BASENAME = "myjar";
+def SDK_VERSION = "_v1.0.0";
+def sdkDestinationPath = "build/outputs/jar/";
+def zipFile = file('build/intermediates/packaged-classes/release/classes.jar')
+task deleteBuild(type: Delete) {
+    delete sdkDestinationPath + SDK_BASENAME + SDK_VERSION + ".jar"
+}
+task makeJar(type: Jar) {
+    from zipTree(zipFile)
+    from fileTree(dir: 'src/main', includes: ['assets/**']) // 打包assets目录下的所有文件
+
+    archiveName = "printer.jar" //这个是你打包之后的jar包的名字
+    from(project.zipTree("libs/agora-rtc-sdk.jar")) //第三方jar，是需要打包进入我这个printer包的
+
+
+    exclude('com/example/mylibrary/BuildConfig.class') //需要导出的配置
+    exclude('com/example/mylibrary/BuildConfig\$*.class')
+    include('com/example/mylibrary/**/*.class') //自己module里面的代码，这个写法是包含所有
+    include('io/agora/**/*.class')  //要包含的第三方的代码
+    include('io/agora/*.class')  //要包含的第三方的代码
+
+
+    baseName = SDK_BASENAME + SDK_VERSION
+    destinationDir = file(sdkDestinationPath)
+}
+makeJar.dependsOn(deleteBuild, build)
+
